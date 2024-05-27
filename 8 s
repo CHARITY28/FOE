@@ -1,0 +1,80 @@
+################################### Exercise 1 ################################### 
+
+# Load the Titanic dataset
+TD <- read.csv("titanic.csv")
+
+# 1. Calculate the percentage of passengers who survived.
+# Output: 34.1965
+survive_table <- table(TD$survive)
+prop.table(survive_table)['yes']*100
+
+# 2. Count the number of survivors in each passenger class.
+# Outputs: 1st class - 193, 2nd class - 119, 3rd class - 137
+survive_table <- table(TD$survive, TD$passenger_class)
+survive_table['yes', '1st']
+survive_table['yes', '2nd']
+survive_table['yes', '3rd']
+
+# 3. Calculate the percentage of survivors in each passenger class.
+# Outputs: 1st class - 59.93789, 2nd class - 42.5, 3rd class - 19.26864
+survive_table_prop <- addmargins(survive_table)
+(survive_table_prop[2,1] / survive_table_prop[3,1])*100
+(survive_table_prop[2,2] / survive_table_prop[3,2])*100
+(survive_table_prop[2,3] / survive_table_prop[3,3])*100
+
+# 4. Calculate the percentage of 3rd class passengers who survived.
+# Output: 66.43519
+(survive_table_prop[1,3] / survive_table_prop[1,4])*100
+
+# 5. Count the number of survivors by gender.
+# Outputs: Female - 307, Male - 142
+survive_table <- table(TD$survive, TD$sex)
+survive_table['yes', 'female']
+survive_table['yes', 'male']
+
+# 6. Calculate the percentage of female survivors.
+# Output: 66.3067
+survive_table_prop <- addmargins(table(TD$survive, TD$sex))
+(survive_table_prop[2,1] / survive_table_prop[3,1])*100
+
+# 7. Calculate the percentage of male survivors.
+# Output: 16.70588
+(survive_table_prop[2,2] / survive_table_prop[3,2])*100
+
+# 8. Calculate the percentage of 1st class female survivors among all survivors.
+# Output: 13.14031
+survive_table_prop <- addmargins(table(TD$survive, TD$sex, TD$passenger_class))
+(survive_table_prop[2,2,1] / (survive_table_prop[2,3,1] + survive_table_prop[2,3,2] + survive_table_prop[2,3,3]))*100
+
+# 9. Calculate the percentage of 2nd class female survivors among all survivors.
+# Output: 5.567929
+(survive_table_prop[2,2,2] / (survive_table_prop[2,3,1] + survive_table_prop[2,3,2] + survive_table_prop[2,3,3]))*100
+
+# 10. Calculate the percentage of 3rd class female survivors among all survivors.
+# Output: 12.91759
+(survive_table_prop[2,2,3] / (survive_table_prop[2,3,1] + survive_table_prop[2,3,2] + survive_table_prop[2,3,3]))*100
+
+################################### Exercise 2 ################################### 
+
+# Load required library for mosaic plots
+library(ggmosaic)
+
+# 1. Create a mosaic plot for Titanic passenger survival by passenger class
+cont_table <- table(TD$survive, TD$passenger_class)
+plot(cont_table, main="Mosaic table for Titanic passenger survival", xlab="survive", ylab="passenger class")
+
+# 2. Create a colored mosaic plot for Titanic passenger survival by passenger class
+plot(cont_table, main="Mosaic table for Titanic passenger survival", xlab="survive", ylab="passenger class", color=c("light blue","White","light green"))
+
+# 3. Create a mosaic plot for Titanic gender survival
+cont_table_gender <- table(TD$survive, TD$sex)
+plot(cont_table_gender, main="Mosaic table for Titanic gender survival", xlab="survive", ylab="gender", color=c("light blue","light green"))
+
+# 4. Create mosaic plots using ggplot2 for Titanic passenger survival by passenger class and gender
+ggplot(data = TD) + 
+  geom_mosaic(aes(x = product(survive), fill = passenger_class)) +
+  ggtitle("Mosaic plot for Titanic passenger survival by passenger class")
+
+ggplot(data = TD) +
+  geom_mosaic(aes(x = product(survive), fill = sex)) +
+  ggtitle("Mosaic plot for Titanic passenger survival by gender")
