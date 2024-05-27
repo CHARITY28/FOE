@@ -1,0 +1,142 @@
+library(tidyverse)
+library(ggpubr)
+install.packages('tseries')
+library(tseries)
+
+drug <- read.csv("Drug_data.csv")
+marketing <- read.csv("marketing_AB.csv")
+
+################### Exercise 1 - part 1 ##############################
+
+############## Association between Test Group and Converted
+#a
+# H0: There is no association between Test Group and Converted
+# H1: There is an association between Test Group and Converted
+
+#b
+chisq.test(table(marketing$test.group, marketing$converted))
+## p-value < 0.05, we reject null hypothesis. So there is association.
+
+
+################### Exercise 1 - part 2 ##############################
+
+############### Equality between AD and PSA test groups for converted 
+#a
+# H0: There is equality between AD and PSA test groups for converted
+# H1: There is no equality between AD and PSA test groups for converted
+
+#b
+addmargins(table(marketing$test.group, marketing$converted))
+
+p1 = 14423/564577
+p2 = 420/ 23524
+n1 = 564577
+n2 =  23524
+
+#### Check normality
+n1*p1 >= 10
+n1*(1-p1) >= 10
+n2*p2 >= 10
+n2*(1-p2) >= 10
+
+#### Confidence significance two-tailed
+z_star <- qnorm(0.95) 
+
+#### Standard error for a proportion
+se <- sqrt(((p1*(1-p1))/n1)) 
+
+#### Margin of error
+me <- z_star*se 
+ub <- (p1) + me
+lb <- (p1) - me
+ci <- c(lb, ub)
+ci
+prop.test(x = 14423, n = 564577, p = 0.95)
+#c
+# Calculating confidence interval for one the proportions doesn't include the other, thus rejecting the null hypothesis 
+# Both parts 1 & 2 conclude the same result
+
+
+################### Exercise 2 - part 1 ##############################
+
+######### Test if the average most ads hour = 6
+#a
+# H0: most ads hour average = 6
+# H1: most ads hour average != 6
+
+#b
+mean(marketing$most.ads.hour)
+t.test(marketing$most.ads.hour, mu = 6, conf.level = 0.99)
+# result shows p-value < 0.05, and from confidence interval we can reject null hypothesis.
+
+#c
+mu_hat = mean(marketing$most.ads.hour)
+sd_hat = sd(marketing$most.ads.hour)
+n = length(marketing$most.ads.hour)
+se = sd_hat/sqrt(n)
+t_star = qt(0.99, df = n-1) # two-tails
+me = t_star*se
+ub <- mu_hat + me
+lb <- mu_hat - me
+ci <- c(lb, ub)
+ci
+# both b and c confirm the same results, 6 falls outside the confidence interval calculated
+
+
+################### Exercise 2 - part 2 ##############################
+
+######## Compare the two means
+#a
+# H0: mu(ad) = mu(psa)
+# H1: mu(ad) != mu(psa)
+
+#b
+marketing %>%
+  group_by(test.group) %>%
+  summarise(
+    count = n(),
+    mean = mean(most.ads.hour, na.rm = TRUE),
+    sd = sd(most.ads.hour, na.rm = TRUE))
+
+ggboxplot(marketing, x = "test.group", y = "most.ads.hour", 
+          color = "test.group", palette = c("#00AFBB", "#E7B800"),
+          ylab = "most.ads.hour", xlab = "Groups")
+
+# Jarque Bera normality test for mean of ad test.group
+jarque.bera.test(marketing$most.ads.hour[marketing$test.group == "ad"])
+
+# Jarque Bera normality test for mean of psa test.group
+jarque.bera.test(marketing$most.ads.hour[marketing$test.group == "psa"])
+
+# Both Jarque tests have p-value < 0.05, so both reject null hypothesis of normal distribution
+
+var.test(most.ads.hour ~ test.group, data = marketing)
+
+t.test(most.ads.hour ~ test.group, data = marketing, var.equal = FALSE, conf.level = 0.99)
+# from test, p-value < 0.05 so reject null hypothesis. Both means are not equal
+
+
+################### Exercise 3 - part 1 ##############################
+
+############## Drug improvement = 2
+#a
+# H0: Mean(difference) =  2
+# Ha: Mean(difference) != 2
+
+#b
+drug$diff = drug$Mem_Score_After - drug$Mem_Score_Before 
+shapiro.test(drug$diff)
+mean(drug$diff)
+
+### Using confidence interval
+mu_hat = mean(drug$diff)
+sd_hat = sd(drug$diff)
+n = length(drug$diff)
+se = sd_hat/sqrt(n)
+t_star = qnorm(0.975)
+me = t_star*se
+ub = mu_hat + me
+lb = mu_hat - me
+ci <- c(lb, ub)
+ci
+# mean is within interval, accept null hypothesis
