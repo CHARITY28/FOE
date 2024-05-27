@@ -1,0 +1,172 @@
+# Required Libraries
+library(tidyr)
+library(dplyr)
+library(dbplyr)
+library(ggplot2)
+library(moments)
+library(car)
+library(ISLR)
+data(package = "ISLR")
+install.packages("moments")
+library(moments)
+library(pacman)
+p_load(tidyverse)
+
+########################################################### 1 ###########################################################
+# Load the Carseats dataset
+data <- Carseats
+
+########################################################### 2 ###########################################################
+# Display the structure of the dataset and count the number of numerical and categorical variables
+str(data)
+numerical <- length(select_if(data, is.numeric))  # 8 NUMERICAL
+categorical <- length(data) - numerical  # 3 CATEGORICAL
+  
+########################################################### 3 ###########################################################
+# Summary statistics and visualizations for numerical variables
+
+numeric_col <- colnames(select_if(data, is.numeric))
+
+# a. Summary statistics
+summary(data)
+
+# b. Histograms with density lines for each numerical variable
+par(mfrow = c(3,3))
+for (i in numeric_col) {
+  hist(data[,i], freq = FALSE, main = paste(i, " distribution"), xlab = i, col = "steelblue")
+  ds <- density(data[,i])
+  lines(ds, col = "red", lwd = 2)
+}
+
+# c. QQ plots for each numerical variable
+for (i in numeric_col) {
+  print(qqPlot(data[,i], main = paste(i, " qqplot")))
+}
+
+# d. Skewness and kurtosis calculations
+print("-------SKEWNESS-------")
+for (i in numeric_col) {
+  skewness_value = skewness(data[,i])
+  if (skewness_value >= -0.5 & skewness_value <= 0.5) {
+    cat(i, skewness_value, "column is nearly symmetrical \n")
+  } else if (skewness_value <= -0.5 & skewness_value >= -1 | skewness_value >= 0.5 & skewness_value <= 1) {
+    cat(i, skewness_value, "column is moderately skewed \n")
+  } else {
+    cat(i, skewness_value, "column is heavily skewed \n")
+  }
+}
+print("-------KURTOSIS-------")
+for (i in numeric_col) {
+  kurtosis_value = kurtosis(data[,i]) - 3 
+  if (kurtosis_value > 0) {
+    cat(i, kurtosis_value, "column is leptokurtic \n")
+  } else if (kurtosis_value < 0) {
+    cat(i, kurtosis_value, "column is platykurtic \n")
+  } else {
+    cat(i, kurtosis_value, "column is mesokurtic \n") 
+  }
+}
+
+# e. Boxplots for each numerical variable
+for (i in numeric_col) {
+  boxplot(data[,i], horizontal = TRUE, main = paste(i, " boxplot"), outline = TRUE, outcol = "red")
+}
+
+# f. Outlier detection for each numerical variable
+for (i in numeric_col) {
+  upper <- quantile(data[,i], probs = 0.75) + (1.5 * IQR(data[,i]))
+  lower <- quantile(data[,i], probs = 0.25) - (1.5 * IQR(data[,i]))
+  cat(i, "Column outliers at indices", which(data[,i] < lower | data[,i] > upper), "\n")
+}
+
+# g. Normality test for each numerical variable
+for (i in numeric_col) {
+  test = shapiro.test(data[,i])$p.value
+  if (test < 0.05) {
+    cat(i, "Reject NULL hypothesis, data not normally distributed \n")
+  } else {
+    cat(i, "Accept NULL hypothesis, data normally distributed \n")
+  }
+}
+
+# h. Confidence interval for 75% of the data
+for (i in numeric_col) {
+  cat(i, "column: 75% of values fall between", mean(data[,i]) - 2 * sd(data[,i]), "and", mean(data[,i]) + 2 * sd(data[,i]), "\n")
+}
+
+########################################################### 4 ###########################################################
+# Bar plots for categorical variables
+
+data %>%
+  ggplot(aes(x = Urban)) + 
+  geom_bar(col = "black", fill = c("peachpuff2", "lightgreen"))
+
+data %>%
+  ggplot(aes(x = US)) + 
+  geom_bar(col = "black", fill = c("skyblue", "lightgreen"))
+
+data %>%
+  ggplot(aes(ShelveLoc)) + 
+  geom_bar(col = "black", fill = c("paleturquoise", "steelblue", "lightgreen"))
+
+########################################################### 5 ###########################################################
+# Frequency and probability tables for categorical variables
+
+freq1 <- table(data$ShelveLoc, data$Urban)
+round(prop.table(freq1), 2)
+round(prop.table(freq1, margin = 1), 2)
+round(prop.table(freq1, margin = 2), 2)
+plot(round(prop.table(freq1), 2), main = "probability table")
+plot(round(prop.table(freq1, margin = 1), 2), main = "conditional prob on rows")
+plot(round(prop.table(freq1, margin = 2), 2), main = "conditional prob on columns")
+
+freq2 <- table(data$ShelveLoc, data$US)
+round(prop.table(freq2), 2)
+round(prop.table(freq2, margin = 1), 2)
+round(prop.table(freq2, margin = 2), 2)
+plot(round(prop.table(freq2), 2), main = "probability table")
+plot(round(prop.table(freq2, margin = 1), 2), main = "conditional prob on rows")
+plot(round(prop.table(freq2, margin = 2), 2), main = "conditional prob on columns")
+
+freq3 <- table(data$Urban, data$US)
+round(prop.table(freq3), 2)
+round(prop.table(freq3, margin = 1), 2)
+round(prop.table(freq3, margin = 2), 2)
+plot(round(prop.table(freq3), 2), main = "probability table")
+plot(round(prop.table(freq3, margin = 1), 2), main = "conditional prob on rows")
+plot(round(prop.table(freq3, margin = 2), 2), main = "conditional prob on columns")
+
+########################################################### 6 ###########################################################
+# Scatter plots, regression lines, and correlations for numerical variables
+
+# a. Scatter plots and regression lines
+par(mfrow = c(3, 3))
+for (j in numeric_col) {
+  print(j)
+  plot(x = data$Sales, y = data[, j])
+  reg = lm(data[, j] ~ data$Sales)
+  abline(reg, col = "red")
+}
+
+# b. Pearson correlation
+for (j in numeric_col) {
+  print(cor(data$Sales, data[, j], method = c("pearson")))
+}
+
+# c. Interpretation of significant correlations
+# Based on correlation Pearson test, significant correlation exists if p-value < 0.05, in Sales with Price, Age and Education
+
+# d. Scatter plots with regression lines colored by categorical variables
+par(mfrow = c(1, 1))
+data %>%
+  ggplot(aes(x = Sales, y = Price, color = US)) +
+  geom_point() +
+  stat_smooth(method = 'lm')
+
+data %>%
+  ggplot(aes(x = Sales, y = Price, color = ShelveLoc)) +
+  geom_point() +
+  stat_smooth(method = 'lm')
+
+data %>%
+  ggplot(aes(x = Sales, y = Ad
